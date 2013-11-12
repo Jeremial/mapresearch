@@ -2056,7 +2056,7 @@ $(function() {
 });
 
 ;
-(function() {
+(function() { // Nav
 
     if (!App) throw new Error('Global App object required');
     if (!Views) throw new Error('Global Views object required');
@@ -2120,7 +2120,7 @@ $(function() {
 })();
 
 ;
-(function() {
+(function() { // Modal
 
     if (!App) throw new Error('Global App object required');
     if (!Views) throw new Error('Global Views object required');
@@ -2463,7 +2463,7 @@ $(function() {
 ; // Shared view for handling events on list items.
 // - expands/collapses list items.
 // - handles i/o and rendering of details for various list item types.
-(function() {
+(function() { // View
 
     if (!App) throw new Error('Global App object required');
     if (!Views) throw new Error('Global Views object required');
