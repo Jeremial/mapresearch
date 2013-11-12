@@ -1,0 +1,455 @@
+/* Base Candidates */
+.doc-nav a:hover,
+.doc-nav .active {
+  background-color:#f8f8f8;
+  }
+
+.light .quiet {
+  color:rgba(0,0,0,0.5);
+  }
+
+label.inline {
+  margin:0 10px;
+  line-height:40px;
+  }
+
+.load-container {
+  min-height:400px;
+}
+
+.fill-stars { background-image:url(../img/stars.png); }
+
+/* Prevents animation on initial page load. See lib.app.js */
+body:not(.animate) .animate {
+  -webkit-transition:none;
+     -moz-transition:none;
+      -ms-transition:none;
+          transition:none;
+  }
+
+/* Static styles
+-------------------------------------------------- */
+
+.list-heading.expanding:hover {
+  background: #f8f8f8;
+  cursor: pointer;
+}
+
+.mb-logo-app {
+  position:absolute;
+  top:10px;
+  left:10px;
+  z-index:10;
+  }
+
+#alert {
+  position:absolute;
+  top:0px;
+  right:0px;
+  z-index:1;
+  }
+
+.masthead nav .mb-logo,
+.masthead nav .mb-logo-thumb {
+  position:absolute;
+  left:0px;
+  top:10px;
+  }
+
+/* Header nav */
+.masthead nav .hide-mobile > * {
+  vertical-align:top;
+  margin-left:10px;
+  }
+.masthead nav .hide-mobile > a {
+  background:white;
+  color:rgba(0,0,0,0.5);
+  text-align: center;
+  display:inline-block;
+  height:40px;
+  margin:0 0 0 10px;
+  padding:10px;
+  border-radius: 3px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 20px;
+  font-size: 12px;
+  }
+.masthead nav .hide-mobile > a:hover,
+.masthead nav .hide-mobile > a.active {
+  background:#f8f8f8;
+  color:rgba(0,0,0,0.5);
+  }
+
+/* Generic avatar bg sizing */
+.avatar {
+  background-size: cover;
+  background-position: 50% 50%;
+  background-repeat: no-repeat;
+  padding: 0;
+  }
+
+.avatar:before { display:none; }
+
+/* Authed menu */
+.authmenu {
+  min-width:140px;
+  font-size:12px;
+  margin-left:10px;
+  }
+  .authmenu > a {
+    color:rgba(0,0,0,0.5);
+    height:38px;
+    padding:9px 5px;
+    }
+
+.authmenu > a.active,
+.authmenu > a:hover { background-color: #f8f8f8; }
+
+.authmenu .avatar {
+  width: 38px;
+  height: 38px;
+  }
+
+.authmenu.active .avatar { border-bottom-left-radius: 0; }
+
+.authmenu .username {
+  text-align:center;
+  }
+
+/* Dropdown Menu in the masthead */
+.masthead .dropdown {
+  text-align: left;
+  position: absolute;
+  overflow: hidden;
+  left:-1px;
+  right:-1px;
+  top:100%;
+  z-index:100;
+  opacity:0;
+  max-height:0;
+  }
+  .masthead .drop .droplink.active { background-color:#f8f8f8; }
+  .masthead .drop .dropdown.active {
+    margin-top:30px;
+    }
+  .masthead .dropdown.active {
+    max-height:360px;
+    z-index:100;
+    opacity:1;
+    }
+
+.masthead .dropdown div > a,
+.masthead .dropdown strong { font-size:12px; display:block; }
+.masthead .dropdown div,
+.masthead .dropdown form { padding:10px; border-bottom:1px solid rgba(0,0,0,.1); }
+.masthead .dropdown div:last-child,
+.masthead .dropdown form:last-child { border-bottom:0px; }
+
+.masthead .dropdown .plan {
+  padding-left:60px;
+  }
+.plan-icon {
+  background:transparent url(/img/plan-badge-sprite.png) 0 0 no-repeat;
+  height:40px;
+  width:40px;
+  display:block;
+  }
+  .dropdown .plan .plan-icon {
+    position:absolute;
+    top:10px;
+    left:10px;
+    }
+  .plan-icon.free,
+  .plan-icon.foursquare{ background-position:   0px -220px; }
+  .plan-icon.basic    { background-position:-140px -220px; }
+  .plan-icon.standard { background-position:-280px -220px; }
+  .plan-icon.plus     { background-position:-420px -220px; }
+  .plan-icon.premium  { background-position:-560px -220px; }
+  .plan-icon.staff    { background-position:-700px -220px; }
+
+.drop .droplink {
+  width:40px;
+  height:40px;
+  padding:10px;
+  display:inline-block;
+  position:relative;
+  top:10px;
+  }
+  .masthead .drop .dropdown {
+    margin-top:20px;
+    }
+
+/* Modal style */
+#modal > div {
+  position:fixed;
+  left:0px;
+  top:0px;
+  width:100%;
+  height:100%;
+  z-index:-1;
+  overflow-y: auto;
+}
+#modal.active > div {
+  z-index:99999;
+  transition:all .2s, z-index 0 0;
+}
+
+#modal .modal-mask {
+  opacity: 0;
+}
+
+#modal.active .modal-mask {
+  opacity: 1;
+}
+
+#modal .modal-content {
+  -webkit-transform:translateY(-100%);
+     -moz-transform:translateY(-100%);
+      -ms-transform:translateY(-100%);
+          transform:translateY(-100%);
+}
+
+#modal.active .modal-content {
+  -webkit-transform:translateY(0%);
+     -moz-transform:translateY(0%);
+      -ms-transform:translateY(0%);
+          transform:translateY(0%);
+}
+
+.modal-popup {
+  position:absolute;
+  max-width: 1200px;
+  margin: auto;
+  top:0;
+  bottom: 0;
+  left:0;
+  right: 0;
+}
+
+#modal .modal-popup { opacity:0.0; pointer-events:none; }
+#modal .modal-popup:last-child { opacity:1; pointer-events:all; }
+.modal-body { margin-top:20px; margin-bottom:20px; }
+
+.modal-auth .sliding {
+  height:100%;
+  overflow-y: auto;
+}
+.modal-auth .sliding,
+.modal-auth .sliding > * {
+  width:100%;
+  }
+
+.modal .modal-popup:not(#modal-err) .close:hover:before {
+  opacity: .75;
+}
+
+/* Horizontal pct graphs */
+.pctgraph {
+  background:#ddd;
+  background:rgba(0,0,0,0.2);
+  height:10px;
+  margin-bottom:10px;
+  position:relative;
+  overflow:hidden;
+  }
+  .pctgraph.overage { background:transparent; }
+  .pctgraph > * {
+    background:#f8f8f8;
+    background:rgba(255,255,255,0.5);
+    position:absolute;
+    left:1px;
+    right:10%;
+    top:1px;
+    bottom:1px;
+    }
+    .pctgraph.overage > * {
+      background:#ee6565;
+      left:0;right:0;top:0;
+      }
+
+/* circular spot illustrations */
+.image-heading {
+  display: block;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 30px;
+}
+
+.section .big-illustration {
+  background:transparent url(../img/tour-sprite.png) 0 0 no-repeat;
+  position:relative;
+  height:120px;
+  margin:0 auto 20px;
+  width:120px;
+  }
+  .section .big-illustration.fl {
+    margin-right:40px;
+    }
+
+@media only screen and (max-width: 640px) {
+  .features .clearfix .pad1 { padding-bottom:0; }
+  .features .clearfix:last-child .pad1:last-child { padding-bottom: 20px; }
+  .section .big-illustration.fl,
+  .section .big-illustration {
+    position:static;
+    margin:20px auto;
+    float:none;
+    }
+}
+
+/* Video wraps */
+.prose .video {
+  height: 0;
+  margin-bottom: 20px;
+  padding-bottom:56.25%;
+  position: relative;
+  width: 100%;
+}
+
+.prose .video iframe {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  width: 100%;
+  top: 0;
+}
+
+.prose .video:last-child {
+  margin-bottom: 0;
+}
+
+.doc .prose .note,
+.doc .prose .docbox {
+  padding:10px 10px;
+  background:#f8f8f8;
+  margin:0px 0px 20px;
+  }
+.doc .prose .note *,
+.doc .prose .docbox ul { margin:0px; }
+
+.doc .prose .note {
+  color:#222;
+  background:#F1F075;
+  }
+
+.doc .prose .note:last-child,
+.doc .prose .docbox:last-child {
+  margin-bottom: 0;
+}
+
+/* ### Reverse ### */
+body.reverse .wrapper {
+  color:#fff;
+  background:#3c4e5a url(../img/dotgrid-pattern.png);
+  }
+
+body.reverse .title { border:0px; padding:40px 0px 20px; }
+body.reverse hr { background-color:#666; background-color:rgba(255,255,255,0.2); }
+body.reverse li.hr { border-color:#666; border-color:rgba(255,255,255,0.2); }
+
+.map-fullscreen-map .map-fullscreen,
+.map-fullscreen:active,
+.map-fullscreen {
+  background:rgb(40,53,61);
+  background:rgba(40,53,61,0.8);
+  border:none;
+  }
+
+.map-fullscreen:after {
+  background:url(../img/sprite.png) no-repeat -780px -140px;
+  content:'';
+  display:block; width:20px; height:20px; margin:5px;
+  }
+
+/* Splitting fifths */
+.fifths a {
+  float: left;
+  width: 20%;
+}
+
+/* Mobile
+------------------------------------------------------- */
+/* TODO Rules here should eventually be
+ * referenced over at mapbox.com/base
+*/
+
+@media only screen and (max-width:640px) {
+  /* Top Branding and Navigation */
+  .masthead nav > * { margin-left:0; }
+  .masthead nav > .button,
+  .masthead .authmenu > a {
+    height:40px;
+    line-height:40px;
+    padding:10px;
+    }
+  .masthead {
+    min-height:80px;
+    }
+  .authmenu.authed {
+    border:none;
+    position:static;
+    display:block;
+    }
+    .authmenu .avatar {
+      background:none!important;
+      position:absolute;
+      top:20px;
+      right:0;
+      border:1px solid #DDD;
+      height:40px;
+      width:40px;
+      }
+      .authmenu .avatar.active {
+        background:#f8f8f8!important;
+        }
+      .authmenu .avatar:before {
+        display:block;
+        }
+
+    .masthead .dropdown {
+      position:static;
+      margin-top:70px;
+      }
+
+  /* Footer Style */
+  .footer .col4       { width:33.3333%; }
+  .footer .newsletter { margin-top:40px; }
+
+  /* Modal UI*/
+  #modal.active .modal-mask { background:#FFF; }
+}
+
+/* retina assets */
+@media
+  only screen and (-webkit-min-device-pixel-ratio:2),
+  only screen and (min-device-pixel-ratio:2) {
+  .fill-stars {
+    background-image:url(../img/stars@2x.png);
+    -webkit-background-size:300px 300px;
+            background-size:300px 300px;
+    }
+
+  .dropdown .plan .plan-icon {
+    background-image:url(/img/plan-badge-sprite@2x.png);
+    -webkit-background-size:820px 260px;
+            background-size:820px 260px;
+    }
+
+  .leaflet-container {
+    background-image:url(/img/canvas@2x.png);
+    -webkit-background-size:20px 20px;
+            background-size:20px 20px;
+    }
+
+  .section .big-illustration {
+    background-image:url(../../img/tour-sprite@2x.png);
+    -webkit-background-size:210px 1850px;
+            background-size:210px 1850px;
+    }
+  #auth-signup .top-illustration {
+    background-image:url(../../img/editor-sprite@2x.png);
+    -webkit-background-size:360px 615px;
+            background-size:360px 615px;
+    }
+}

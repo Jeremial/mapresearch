@@ -1,0 +1,815 @@
+
+<!DOCTYPE html >
+<html>
+<head>
+  <meta charset='UTF-8'/>
+  <meta name='robots' content='index'/>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+  
+  <title>MapBox | Fast and beautiful maps</title>
+
+  
+
+  <link href='css/base.css' rel='stylesheet' />
+  <link href='css/site.css' rel='stylesheet' />
+  <!--[if IE 9]><link href='/css/site-ie9.css' rel='stylesheet' /><![endif]-->
+  <link rel='shortcut icon' href='/img/favicon.ico' type='image/x-icon' />
+  <link rel='alternate' type='application/rss+xml' title='RSS' href='/blog/blog.rss' />
+
+  <!--<script>
+  var analytics=analytics||[];(function(){var e=['identify','track','trackLink','trackForm','trackClick','trackSubmit','page','pageview','ab','alias','ready','group'],t=function(e){return function(){analytics.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var n=0;n<e.length;n++)analytics[e[n]]=t(e[n])})(),analytics.load=function(e){var t=document.createElement('script');t.type='text/javascript',t.async=!0,t.src=('https:'===document.location.protocol?'https://':"http://")+'d2dq2ahtl5zl1z.cloudfront.net/analytics.js/v1/'+e+'/analytics.min.js';var n=document.getElementsByTagName('script')[0];n.parentNode.insertBefore(t,n)};
+  analytics.load(window.location.hostname.indexOf('mapbox.com') !== -1 ? 'fl0c8p240n' : '0biiejpgfj');
+  </script>-->
+  <!--<script src='https://js.stripe.com/v2/'></script>
+  <script>
+  Stripe.setPublishableKey(window.location.hostname.indexOf('mapbox.com') !== -1 ?
+    'pk_live_hI6mmOTIg7KkywK6vo3vJvpk' : 'pk_test_gmIyREg3sKzAiyMkAEeCsxUG');
+  </script>-->
+
+  <script src='js/mapbox-v1.4.0.js'></script>
+  <link href='css/mapbox-v1.4.0.css' rel='stylesheet' />
+  <!--[if lte IE 8]>
+    <link href='https://api.tiles.mapbox.com/mapbox.js/v1.4.0/mapbox.ie.css' rel='stylesheet' >
+  <![endif]-->
+
+  <script src='api/session.js'></script>
+  <script src="js/underscore.js"></script>
+  <script src="js/jquery2.0.3.js"></script>
+  <script src="js/backbone.js"></script>
+  <script src="js/number.js"></script>
+  <script src='js/site.js'></script>
+  <link href='css/maki-sprite.css' rel='stylesheet' />
+<script src='js/maki.js'></script>
+<link href='css/editor.css' rel='stylesheet' />
+<script src='js/jquery.sortable.js'></script>
+<script src='js/editor.js'></script>
+
+
+</head>
+<body class=''>
+
+
+<a id='app' class='app'></a>
+
+<!--Map UI: first-time welcome -->
+<div id='welcome' class='margin3 col6 app animate pin-top offcanvas-top hide-mobile fill-white center pad2'>
+  <h2>Welcome to MapBox</h2>
+  <p class='quiet'>Create, design, and publish maps in the MapBox Editor.</p>
+  <div class='space clearfix'>
+    <a href='#style' class='margin1 col5 button loud icon sun'>Customize the map</a>
+    <a href='#app' class='col5 button loud icon check'>Let me explore!</a>
+  </div>
+</div>
+
+<script id='template-app-logo' type='text/html'>
+<a id='app-logo' class='mb-logo-app animate' href='<%= App.user ? '/projects/' : '/#splash' %>'></a>
+</script>
+<script>document.write(App.template('template-app-logo')());</script>
+
+<script id='place-template-popup' type='text/html'>
+<div class='place-popup round dark'>
+  <% if (obj.title) { %>
+    <a href='#markers' id='place-marker' class='button icon plus truncate'><%= obj.title %></a>
+  <% } else { %>
+    <a href='#markers' id='place-marker' class='button icon marker'>New marker</a>
+  <% } %>
+</div>
+</script>
+
+<!--Map UI: Search -->
+<div id='search' class='app module fill-darken3 dark animate pin-bottom offcanvas-bottom clearfix'>
+  <a href='#app' class='big button icon close'></a>
+  <div id='search-results' class='pad2 col6 margin3'></div>
+  <form class='pad2 col6 margin3 contain' method='post'>
+    <span class='icon search'></span>
+    <input type='text' class='big stretch' autocomplete='off' placeholder='Search' />
+  </form>
+</div>
+<script id='template-search-results' type='text/html'>
+<% if (obj.length) _(obj.slice(0,5)).each(function(r, idx) { %>
+<% var place = _(r.slice(1)).chain().filter(function(v) { return v.type !== 'zipcode' }).pluck('name').value().join(', '); %>
+<input id='search-result-<%=idx%>' type='radio' name='search-result' value='<%=idx%>' <%= !idx ? 'checked' : '' %>/>
+<label for='search-result-<%=idx%>' class='pad1y pad4x result'><strong><%=r[0].name%></strong> <span><%=place%></span></label>
+<% }); %>
+<% if (!obj.length) { %>
+<label class='pad1y pad4x result'>No results</label>
+<% } %>
+</script>
+
+<!--Map UI: Markers -->
+<div id='markers' class='app module dark fill-darken3 clearfix animate pin-bottom offcanvas-bottom'>
+  <div id='marker-edit' class='col12 pin-top'></div>
+  <div id='marker-edit-empty' class='pad4y center'>
+    <div class='inline big-graphic illustration space-bottom'></div><br/>
+    <label>Click the map to make a new marker</label>
+  </div>
+  <div id='marker-tray' class='col2 pin-left keyline-right'></div>
+  <a href='#app' class='big button icon close'></a>
+</div>
+<script id='marker-template-tray' type='text/html'>
+<a class='keyline-bottom contain pad1y pad1x small' id='<%=id%>' href='#edit-<%=id%>'>
+  <span class='title truncate'><%= $('<div>'+title+'</div>').text() %></span>
+  <span class='icon trash button unround'></span>
+</a>
+</script>
+<script id='marker-template-edit' type='text/html'>
+<div class='col12 contain'>
+
+<div class='col12 pad2y clearfix'>
+  <div class='tabs margin3 col6 clearfix'><!--
+    --><a href='#marker-edit-text' class='col4 active'>Text</a><!--
+    --><a href='#marker-edit-style' class='col4'>Style</a><!--
+    --><a href='#marker-edit-symbol' class='col4'>Symbol</a>
+  </div>
+</div>
+
+<div class='clip sliding h active1 margin3 col6'>
+  <div id='marker-edit-text' class='animate col12 clearfix'>
+    <p>
+      <input type='text' placeholder='Untitled' class='big stretch' value='<%=_(title).escape()%>' name='title' />
+      <label>Name your marker</label>
+    </p>
+    <p>
+      <textarea placeholder='Description' class='big stretch' name='description'><%=description%></textarea>
+      <label>Add a description</label>
+    </p>
+  </div>
+  <div id='marker-edit-style' class='animate col12'>
+    <p class='clearfix pill'><!--
+    --><input id='marker-size-small' type='radio' name='marker-size' value='small' <%= obj['marker-size'] === 'small' ? 'checked' : '' %> /><!--
+    --><label for='marker-size-small' class='col3 button'>Small</label><!--
+    --><input id='marker-size-medium' type='radio' name='marker-size' value='medium' <%= obj['marker-size'] === 'medium' ? 'checked' : '' %> /><!--
+    --><label for='marker-size-medium' class='col3 button'>Medium</label><!--
+    --><input id='marker-size-large' type='radio' name='marker-size' value='large' <%= obj['marker-size'] === 'large' ? 'checked' : '' %> /><!--
+    --><label for='marker-size-large' class='col3 button'>Large</label><!--
+    --><input id='marker-color' name='marker-color' type='text' class='col2 fr' placeholder='#000000'<%= obj['marker-color'] ? ' value="' + obj['marker-color'] + '"' : '' %> />
+    </p>
+    <% _(App.colors).each(function(color) { %>
+    <input id='marker-color-<%=color%>' type='radio' name='marker-color' value='#<%=color%>' <%= obj['marker-color'] === '#' + color ? 'checked' : '' %> />
+    <label for='marker-color-<%=color%>' class='swatch center clip icon check col1' style='background-color:#<%=color%>'></label>
+    <% }); %>
+  </div>
+  <div id='marker-edit-symbol' class='animate col12'>
+    <div class='pager'>
+      <a href='#marker-edit-symbol-pages' class='full button icon big up round-top'></a>
+      <a href='#marker-edit-symbol-pages' class='full button icon big down round-bottom'></a>
+    </div>
+    <div id='marker-edit-symbol-pages' class='sliding v active1'>
+      <%
+      if (!window.MakiFull) {
+        var icons = window.Maki.slice(0);
+        icons.unshift({ alpha:true, icon:'' });
+        icons = icons.concat(_(10).chain().range().map(function(v) { return { alpha:true, icon:v } }).value());
+        icons = icons.concat(_(26).chain().range().map(function(v) { return { alpha:true, icon:String.fromCharCode(97 + v) } }).value());
+        window.MakiFull = icons;
+      }
+      _(window.MakiFull).chain()
+      .filter(function(icon) { return !icon.tags || icon.tags.indexOf('deprecated') === -1 })
+      .each(function(icon, i) { %>
+      <% if ((i % 60) === 0) { %><div class='animate col12 clearfix'><% } %>
+      <input id='marker-symbol-<%=icon.icon%>' type='radio' name='marker-symbol' value='<%=icon.icon%>' <%= obj['marker-symbol'] === icon.icon ? 'checked' : '' %> />
+      <% if (icon.alpha) { %>
+      <label for='marker-symbol-<%=icon.icon%>' class='col1 symbol center round'><span class='maki-icon alpha'><%=icon.icon%></span></label>
+      <% } else { %>
+      <label for='marker-symbol-<%=icon.icon%>' class='col1 symbol center round' title='<%=icon.name%>'><span class='maki-icon <%=icon.icon%>'></span></label>
+      <% } %>
+      <% if ((i % 60) === 59 || (window.MakiFull.length - 1) === i) { %></div><% } %>
+      <% }); %>
+    </div>
+  </div>
+</div>
+</div>
+</script>
+
+<!--Map UI: Style -->
+<div id='style' class='app module dark fill-darken3 animate pin-bottom offcanvas-bottom'>
+  <a href='#app' class='big button icon close'></a>
+
+  <div class='col6 margin3 pad2y'>
+    <div class='tabs clearfix'>
+      <a href='#style-tint' class='col4 active'>Colors</a>
+      <a href='#style-type' class='col4'>Baselayer</a>
+      <a href='#style-l10n' class='col4'>Labels</a>
+    </div>
+  </div>
+
+  <div class='clip sliding col12 h active1'>
+    <!-- Colors -->
+    <div id='style-tint' class='col12 clearfix animate'></div>
+    <script id='template-style-tint' type='text/html'>
+    <%
+    var keys = {};
+    keys['whiz'] = 'Recipe';
+    keys['streets'] = 'Streets';
+    if (type !== 'satellite') keys['buildings'] = 'Buildings';
+    if (type === 'streets') keys['landuse']   = 'Areas';
+    if (type === 'terrain') keys['base.live-landuse-tr'] = 'Areas';
+    if (type !== 'satellite') keys['water'] = 'Water';
+    if (type === 'streets') keys['bg'] = 'Land';
+    if (type === 'terrain') keys['base.live-land-tr'] = 'Terrain';
+    if (type === 'satellite') keys['base.live-satellite'] = 'Satellite';
+    %>
+    <div class='col12 clip sliding v active3'>
+      <% _(keys).each(function(label, id) { %>
+      <% if (id === 'whiz') { %>
+      <div id='style-swatches' class='animate margin3 col4'>
+        <div class='clearfix'>
+        <% _(Streets.recipes.streets.swatches).each(function(color) { %>
+        <input id='style-swatches-<%=color%>' type='radio' name='style-tint-whiz-swatches' value='#<%=color%>' />
+        <label for='style-swatches-<%=color%>' class='swatch center big clip icon check col4' style='background-color:#<%=color%>'></label>
+        <% }); %>
+        </div>
+      </div>
+      <% } %>
+      <div id='style-tint-<%=id.replace('.','-')%>' class='animate margin3 col6 color-picker'>
+        <input type='hidden' name='id' value='<%=id%>' />
+        <div class='col8 contain picker'>
+          <div class='color-sl'><a></a></div>
+          <div class='color-h'><a></a></div>
+          <fieldset class='with-icon hex'>
+            <span class='quiet'>#</span>
+            <input type='text' placeholder='000000' class='animate stretch color-hex' maxlength='6'/>
+          </fieldset>
+        </div>
+        <% if (id !== 'whiz') { %>
+        <div class='col4 filter-sliders'>
+          <label class='pad1y block'>Filter intensity</label>
+          <small class='clearfix contain'>
+            <input class='clamp col8' name='hd' type='range' value='0' min='0' max='0.5' step='0.01' />
+            <span class='col2 center'>H</span>
+          </small>
+          <small class='clearfix contain'>
+            <input class='clamp col8' name='sd' type='range' value='0' min='0' max='0.5' step='0.01' />
+            <span class='col2 center'>S</span>
+          </small>
+          <small class='clearfix contain'>
+            <input class='clamp col8' name='ld' type='range' value='0' min='0' max='0.5' step='0.01' />
+            <span class='col2 center'>L</span>
+            <span class='col2 icon l-r-arrow invert'></span>
+          </small>
+          <% if (['bg','base.live-satellite','base.live-land-tr'].indexOf(id) === -1) { %>
+          <small class='clearfix contain'>
+            <input class='clamp col8' name='a' type='range' value='0' min='0' max='1' step='0.01' />
+            <span class='col2 center'>A</span>
+          </small>
+          <% } %>
+        </div>
+        <% } %>
+      </div>
+    <% }); %>
+    </div>
+    <div class='palette-tabs col2 clip sliding'>
+      <div id='palette-tabs-recipes' class='col12 animate'>
+        <% _(Streets.recipes).each(function(recipe, id) { %>
+        <a href='#style' id='palette-<%=id%>' class='truncate palette block small pad1y pad2x icon sun keyline-bottom'><%= recipe.name %></a>
+        <% }); %>
+      </div>
+      <div id='palette-tabs-custom' class='col12 animate'>
+        <label class='truncate block pad1y pad2x icon levels'>Custom palette</label>
+        <a href='#style' id='palette-streets' class='truncate palette block small pad1y pad2x icon close round-right'>Discard style</a>
+      </div>
+    </div>
+    <div class='color-tabs animate contain margin9 col2'><!--
+      <% _(keys).each(function(label, id) { %>
+      <% if (id === 'whiz') { %>
+      --><a href='#style-tint-whiz-swatches' class='hidden'></a><!--
+      --><a href='#style-tint-whiz' class='hidden'></a><!--
+      <% } else { %>
+      --><a href='#style-tint-<%=id.replace('.','-')%>' class='block contain pad1x <%= id === 'streets' ? 'active' : '' %>'>
+        <span class='swatch animate' id='style-tab-<%=id.replace('.','-')%>'></span>
+        <small class='inline pad1x'><%=label%></small>
+        <span class='icon next'></span>
+        <% if (['base.live-satellite','base.live-land-tr'].indexOf(id) === -1) { %>
+        <span class='disable icon eye'></span>
+        <span class='enable  icon noeye'></span>
+        <% } %>
+      </a><!--
+      <% } %>
+      <% }); %>
+    --></div>
+    </script>
+
+    <!-- Layers -->
+    <div id='style-type' class='animate col12 space-bottom'>
+      <div class='pill clearfix'><!--
+      --><input id='style-type-streets' type='radio' name='type' value='streets' /><!--
+      --><label for='style-type-streets' class='col2 button tall big icon street margin3'>Streets</label><!--
+      --><input id='style-type-terrain' type='radio' name='type' value='terrain' /><!--
+      --><label for='style-type-terrain' class='col2 button tall big icon mt'>Terrain</label><!--
+      --><input id='style-type-satellite' type='radio' name='type' value='satellite' /><!--
+      --><label for='style-type-satellite' class='col2 button tall big icon satellite'>Satellite</label><!--
+      --></div>
+      <div class='center pad1'><label>Select a baselayer</label></div>
+    </div>
+
+    <!-- Labels -->
+    <div id='style-l10n' class='animate col12'>
+      <div class='clearfix pill'><!--
+      --><input id='style-l10n-' type='radio' name='l10n' value='' /><!--
+      --><label for='style-l10n-' class='col2 margin2 button tall big'>Localized</label><!--
+      --><input id='style-l10n-en' type='radio' name='l10n' value='en' /><!--
+      --><label for='style-l10n-en' class='col2 button tall big'>English</label><!--
+      --><input id='style-l10n-fr' type='radio' name='l10n' value='fr' /><!--
+      --><label for='style-l10n-fr' class='col2 button tall big'>Français</label><!--
+      --><input id='style-l10n-es' type='radio' name='l10n' value='es' /><!--
+      --><label for='style-l10n-es' class='col2 button tall big'>Español</label><!--
+      --></div>
+      <div class='center pad1'><label>Select a language</label></div>
+    </div>
+  </div>
+</div>
+
+<!--Map UI: Project -->
+<div id='project' class='app module dark fill-darken3 animate pin-bottom offcanvas-bottom clearfix'>
+  <div class='sliding h active1 col12'>
+  <div id='project-settings' class='col12 pad2y animate active'>
+    <div class='col6 margin3 sliding v clip active1'>
+      <div id='project-info' class='col12 animate'>
+        <div class='title'>
+          <input type='text' name='name' class='big stretch' />
+          <label>Name your map</label>
+        </div>
+        <div class='title'>
+          <textarea name='description' class='big stretch' rows='2'></textarea>
+          <label>Describe your map</label>
+        </div>
+        <div class='col6'>
+          <input type='checkbox' id='save-center' name='save-center' value='1'>
+          <label for='save-center' class='icon crosshair truncate button'>Save current map position</label>
+        </div>
+        <div class='col6 pill'>
+          <a href='#app' class='button col6 icon close revert'>Revert</a>
+          <a href='#app' class='button col6 icon floppy save loud'>Save</a>
+        </div>
+      </div>
+      <div id='project-advanced' class='col12 animate pad4 fill-darken1'>
+        <h3 class='title'>Advanced settings</h3>
+        <div class='title'>
+          <input type='checkbox' id='private' name='private' value='1'>
+          <label for='private' class='truncate space'><span class='icon lock button'></span> Hide project from public API</label>
+        </div>
+        <div class='title'>
+          <input type='checkbox' id='style-2x' name='style-2x' value='2'>
+          <label for='style-2x' class='truncate space'><span class='icon tx button'></span> Force @2x scale for MapBox Streets</label>
+        </div>
+      </div>
+    </div>
+    <div class='margin9 col3 pad1y pad2x switch small'>
+      <a href='#project-info' class='icon info'>Info</a>
+      <a href='#project-advanced' class='icon sprocket'>Advanced</a>
+    </div>
+  </div>
+  <div id='project-data' class='col12 animate pad2y'>
+    <div id='project-data-browse'></div>
+    <div id='project-data-empty' class='pad2y center'>
+      <div class='inline big-graphic illustration space-bottom dot fill-darken2'></div><br/>
+      <label>Upload data from <a href='https://www.mapbox.com/tilemill/' target='_blank'>TileMill</a> to add layers to your map</label>
+    </div>
+  </div>
+  </div>
+  <div id='project-layers' class='margin3 col6 pad2y dark animate offcanvas-bottom small'>
+    <div class='plus'></div>
+    <div class='base'></div>
+  </div>
+  <div class='pad2 switch text-right col3'>
+    <a href='#project-settings' class='button round-left icon sprocket active'></a><!--
+    --><a href='#project-data' class='button round-right icon book'></a>
+  </div>
+  <a href='#app' class='big button icon close' title='Close'></a>
+</div>
+<script type='text/html' id='template-project-data'>
+<div class='margin9 pager pad2x'>
+  <a href='#project-data-pages' class='button icon big up round-top'></a><br/>
+  <a href='#project-data-pages' class='button icon big down round-bottom'></a>
+</div>
+<div id='project-data-pages' class='margin3 col6 clip sliding v active1'>
+  <% _(obj).chain()
+  .sortBy(function(item) { return item.get('name').toLowerCase() })
+  .filter(function(item) { return item.get('format') !== 'pbf' })
+  .filter(function(item) { return item.get('status') === 'available' })
+  .each(function(item, i) { %>
+  <% if (i%5 === 0) { %><div class='col12 animate'><% } %>
+  <%= App.template('template-project-layer')(item) %>
+  <% if (i%5 === 4 || i === (obj.length - 1)) { %></div><% } %>
+  <% }); %>
+</div>
+</script>
+<script type='text/html' id='template-project-layer'>
+<a href='#project' class='data-layer keyline-bottom clip clearfix' data-id='<%=obj.get('id')%>'>
+  <span class='col6 truncate'><!--
+    --><span class='icon check pad1 inline'></span><!--
+    --><span class='icon document pad1 inline'></span><!--
+    --><small class='pad1 inline'><%= obj.escape('name') || obj.escape('id') %></small>
+  </span>
+  <span class='col6 truncate text-right'><!--
+    --><small class='pad1 inline'>z<%= obj.escape('minzoom') %>-z<%= obj.escape('maxzoom') %></small><!--
+    --><span class='icon button <%= obj.id.indexOf('base.') === -1 ? 'close' : 'lock' %> unround inline'></span>
+  </span>
+</a>
+</script>
+
+<!--Map UI: Share -->
+<div id='share' class='app module dark fill-darken3 animate pin-bottom offcanvas-bottom clearfix'>
+  <a href='#app' class='big button icon close'></a>
+  <div id='share-content' class='col6 margin3'></div>
+</div>
+<script id='template-modal-share' type='text/html'>
+<div class='col12 modal-popup modal-share'>
+  <div class='col6 margin3 modal-body fill-white contain'>
+    <a href='#close' class='quiet big icon fr close'></a>
+    <div class='pad2y pad4x center keyline-bottom top-illustration'>
+      <span class='inline icon big share'></span>
+    </div>
+    <div class='pad4x clearfix'>
+      <%= App.template('template-share')(obj) %>
+    </div>
+  </div>
+</div>
+</script>
+
+<script id='template-share' type='text/html'>
+  <%
+    var share = 'https://a.tiles.mapbox.com/v3/' + obj.id + '/page.html?secure=1#' + obj.center[2] + '/' + obj.center[1] + '/' + obj.center[0];
+    var embed = 'https://a.tiles.mapbox.com/v3/' + obj.id + '.html?secure=1#' + obj.center[2] + '/' + obj.center[1] + '/' + obj.center[0];
+    var readr = (obj.description) ? obj.name + ' – ' +  obj.description : obj.name;
+    var tweet = '//twitter.com/share?url=' + encodeURIComponent(share) + '&text=' + encodeURIComponent(obj.name + ' – ');
+    var fbook = '//www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(share);
+    var email = 'mailto:?subject=' + encodeURIComponent(readr) + '&body=' + encodeURIComponent(share);
+    var activetab = obj.activetab || 'active1';
+  %>
+  <div class='pad2y'>
+    <div class='tabs clearfix'><!--
+      --><a href='#share-simple'     class='col4 <%= activetab === 'active1' ? 'active' : '' %>'>Share</a><!--
+      --><a href='#share-embed'      class='col4 <%= activetab === 'active2' ? 'active' : '' %>'>Embed</a><!--
+      --><a href='#share-developers' class='col4 <%= activetab === 'active3' ? 'active' : '' %>'>Developers</a>
+    </div>
+  </div>
+  <div class='clip sliding col12 h <%= activetab %>'>
+    <div id='share-simple' class='animate col12 clearfix'>
+      <div class='col8 clearfix'>
+        <div class='clearfix col12 space-bottom pill'>
+          <a href='<%= tweet %>' target='_blank' title='twitter' data-type='Twitter' class='col4 button popup icon twitter loud'>twitter</a>
+          <a href='<%= fbook %>' target='_blank' title='facebook' data-type='Facebook' class='col4 button popup icon facebook loud'>facebook</a>
+          <a href='<%= email %>' target='_blank' title='email' data-type='Email' class='col4 button icon mail loud'>email</a>
+        </div>
+        <div class='col12 clearfix'>
+          <fieldset class='with-icon col12'>
+            <span class='icon share'></span>
+            <input class='readonly stretch' data-type='URL' type='text' value='<%= share %>' readonly></input>
+          </fieldset>
+          <small class='pad1y'>Use this <strong>Share URL</strong> to link others to this map.</small>
+        </div>
+      </div>
+      <div class='col4 share-illustration-wrap'>
+        <div class='round fill-darken2 share-illustration big-graphic pad2x illustration-1 col12'></div>
+      </div>
+    </div>
+    <div id='share-embed' class='animate col12 clearfix'>
+      <div class='col8'>
+        <textarea readonly data-type='Embed' class='stretch readonly embed'><iframe width='100%' height='500px' frameBorder='0' src='<%= embed %>'></iframe></textarea>
+        <small class='pad1y'>Copy and paste this <strong>HTML code</strong> into documents to embed this map on web pages.</small>
+      </div>
+      <div class='col4 share-illustration-wrap'>
+        <div class='round fill-darken2 share-illustration big-graphic pad2x illustration-2 col12'></div>
+      </div>
+    </div>
+    <div id='share-developers' class='animate col12 clearfix'>
+      <div class='col8 clearfix'>
+        <div class='clearfix block space-bottom pill'>
+          <a href='https://www.mapbox.com/mapbox.js/' target='_blank' class='col6 loud button icon brackets'>mapbox.js</a>
+          <a href='https://www.mapbox.com/tour/#section-mobile' target='_blank' class='col6 loud button icon mobile'>Mobile Tools</a>
+        </div>
+        <fieldset class='with-icon stretch'>
+          <span class='icon share'></span>
+          <input class='readonly stretch' data-type='Map ID' type='text' value='<%= obj.id %>' readonly></input>
+        </fieldset>
+        <small class='pad1y'>
+          Use this <strong>Map ID</strong> with our <a href='https://www.mapbox.com/developers/' target='_blank'>developer tools</a> for advanced integration with sites and apps.
+        </small>
+      </div>
+      <div class='col4 share-illustration-wrap'>
+        <div class='round fill-darken2 share-illustration big-graphic pad2x illustration-3 col12'></div>
+      </div>
+    </div>
+  </div>
+</script>
+
+
+<div id='map-actions' class='margin3 col6 app animate clip sliding v active2 hide-mobile'>
+  <div id='map-help' class='animate col12 fill-white truncate'></div>
+  <div id='map-save' class='animate col12 fill-darken2 dark clearfix clip'>
+    <div class='col8 contain'>
+      <a href='#project' class='button truncate full icon document animate project-info unround'><span class='project-name'></span></a>
+    </div>
+    <div id='map-saveshare' class='col4 contain sliding v active1 clip'>
+      <a href='#share' class='button full icon share animate keyline-left project-share unround loud'>Share</a>
+      <a href='#app'   class='button full icon floppy animate keyline-left project-save unround loud'>Save</a>
+    </div>
+  </div>
+</div>
+
+<script id='map-help-message' type='text/html'>
+<div class='message animate center clearfix forward'>
+  <span class='fill-darken0 inline dot icon check clip contain'><span class='animate close icon'></span></span>
+  <span class='pad1y inline'><%=obj.message%></span>
+</div>
+</script>
+
+<!--Map UI: Controls -->
+<div class='app modes space animate bottom dark hide-mobile'>
+  <a href='#style' class='button dot big icon sun' title='Style'></a>
+  <a href='#markers' class='button dot big icon marker' title='Add Marker'></a>
+  <a href='#search' class='button dot big icon search' title='Search'></a>
+</div>
+
+<div id='map-app' class='app'>
+  <a href='#' id='set-center' class='round set-center dark fill-darken2 dark'></a>
+</div>
+
+<script id='template-setcenter' type='text/html'>
+  <div class='col12 pad1y fill-darken1 center'>
+    <div class='clip contain set-status animate'>
+      <div class='icon big animate crosshair'></div>
+      <div class='icon big animate check'></div>
+    </div>
+    <strong>Set Center</strong>
+  </div>
+  <div class='col12 clearfix center'>
+    <span class='col4 pad1'><span class='icon u-d-arrow'></span><%= obj.lat %></span>
+    <span class='col4 pad1 keyline-left keyline-right'><span class='icon l-r-arrow'></span><%= obj.lng %></span>
+    <span class='col4 pad1'><span class='icon fullscreen'></span><%= obj.zoom %></span>
+  </div>
+</script>
+
+
+
+<div id='modal'>
+  <div class='modal-mask fill-darken2 modal animate'></div>
+  <div id='modal-content' class='contain modal modal-content animate'></div>
+</div>
+
+<script type='text/html' id='template-modal-auth'>
+<div class='col12 modal-popup modal-auth'>
+  <div class='clip sliding h active2'>
+    <form id='auth-reset' class='animate' method='post'>
+      <div class='col6 margin3 modal-body fill-white contain'>
+        <% if (obj.close) { %>
+        <a href='#close' class='quiet big icon fr close'></a>
+        <% } else { %>
+        <a href='/' class='quiet big icon fr close escape'></a>
+        <% } %>
+        <div class='pad2y pad4x center keyline-bottom top-illustration'>
+          <span class='inline icon big mail'></span>
+        </div>
+        <div class='pad2y pad4x keyline-bottom'>
+          <fieldset>
+            <label>Email</label>
+            <input type='text' name='email' class='stretch' />
+          </fieldset>
+        </div>
+        <div class='pad2y pad2x clearfix'>
+          <div class='col8 pad2x'>
+            <input class='col12' type='submit' value='Send reset instructions' />
+          </div>
+          <small class='col4 pad1y text-right'>
+            <a class='rcon next slide' href='#active2'>Sign in</a>
+          </small>
+        </div>
+      </div>
+    </form>
+    <form id='auth-signin' class='animate' method='post'>
+      <div class='col6 margin3 modal-body fill-white contain'>
+        <% if (obj.close) { %>
+        <a href='#close' class='quiet big icon fr close'></a>
+        <% } else { %>
+        <a href='/' class='quiet big icon fr close escape'></a>
+        <% } %>
+        <div class='pad2y pad4x center keyline-bottom top-illustration'>
+          <span class='inline icon big lock'></span>
+        </div>
+        <div class='pad2y pad4x keyline-bottom'>
+          <fieldset>
+            <label>Username or email</label>
+            <% if (obj.username) { %>
+            <input type='text' name='username' autocapitalize='off' class='stretch' tabindex='1' value='<%= obj.username %>' readonly />
+            <% } else { %>
+            <input type='text' name='username' autocapitalize='off' class='stretch' tabindex='1' />
+            <% } %>
+          </fieldset>
+          <fieldset>
+            <label>Password <small class='inline'><a href='#active1' class='slide' tabindex='3'>Forgot it?</a></small></label>
+            <input type='password' name='password' class='stretch' tabindex='2' />
+          </fieldset>
+        </div>
+        <div class='pad2y pad4x clearfix'>
+          <div class='col6'>
+            <input class='col12' type='submit' value='Sign in' />
+          </div>
+          <% if (!obj.username) { %>
+          <small class='col6 pad1y text-right'>
+            Need an account? <a class='rcon next slide' href='#active3'>Sign up</a>
+          </small>
+          <% } %>
+        </div>
+      </div>
+    </form>
+    <form id='auth-signup' class='animate' method='post'>
+      <div class='col6 margin3 modal-body fill-navy-dark fill-stars dark contain'>
+        <% if (obj.close) { %>
+        <a href='#close' class='big icon fr close'></a>
+        <% } else { %>
+        <a href='/' class='big icon fr close escape'></a>
+        <% } %>
+        <div class='pad2y pad4x keyline-bottom center'>
+          <span class='inline icon dot big account'></span>
+        </div>
+        <div class='pad2y pad2x keyline-bottom'>
+          <fieldset class='col12 pad2x'>
+            <label>Username</label>
+            <input type='text' name='username' autocapitalize='off' class='stretch'/>
+          </fieldset>
+          <fieldset class='col6 pad2x'>
+            <label>First name</label>
+            <input type='text' name='firstname' class='stretch'/>
+          </fieldset>
+          <fieldset class='col6 pad2x'>
+            <label>Last name</label>
+            <input type='text' name='lastname' class='stretch' />
+          </fieldset>
+          <fieldset class='col6 pad2x'>
+            <label>Email</label>
+            <input type='text' name='email' class='stretch' />
+          </fieldset>
+          <fieldset class='pad2x'>
+            <label>Password</label>
+            <input type='password' name='password' class='stretch' />
+          </fieldset>
+          <div class='pad2x'>
+            <small>You agree to the MapBox <a href='http://mapbox.com/tos/'>Terms of Service</a> and <a href='http://mapbox.com/privacy/'>Privacy Policy</a>.</small>
+          </div>
+        </div>
+        <div class='pad2y pad2x clearfix'>
+          <small class='col6 pad2x pad1y'>
+            <a class='icon prev slide' href='#active2'>Sign in</a>
+          </small>
+          <div class='col6 pad2x text-right'>
+            <input class='col12' type='submit' value='Sign up for MapBox' />
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+</script>
+
+<script type='text/html' id='template-modal-payment'>
+<div class='col12 modal-popup modal-payment'>
+    <form id='payment' class='round animate'>
+      <div class='margin3 col6 modal-body fill-white contain'>
+        <% if (obj.close) { %><a href='#close' class='quiet big icon fr close'></a><% } %>
+        <div class='pad2y pad4x center keyline-bottom top-illustration'>
+          <span class='inline icon big cart'></span>
+        </div>
+        <div class='pad4y pad2x keyline-bottom clearfix'>
+          <fieldset class='pad2x col12'>
+            <label>Card number</label>
+            <input type='text' name='number' class='stretch' />
+          </fieldset>
+          <div class='credit-cards pad2 center space fill-light round space-bottom'>
+            <span class='credit-card visa'></span>
+            <span class='credit-card mastercard'></span>
+            <span class='credit-card american-express'></span>
+            <span class='credit-card jcb'></span>
+            <span class='credit-card discover'></span>
+            <span class='credit-card diners-club'></span>
+          </div>
+          <fieldset class='pad2x col4'>
+            <label>Expiration</label>
+            <input type='text' name='exp' class='stretch' placeholder='MM/YYYY' />
+          </fieldset>
+          <fieldset class='pad2x col4'>
+            <label>CVC</label>
+            <input type='text' name='cvc' class='stretch' />
+          </fieldset>
+          <fieldset class='pad2x col4'>
+            <label>Postal code</label>
+            <input type='text' name='address_zip' class='stretch' />
+          </fieldset>
+          <fieldset class='pad2x col12'>
+            <label>Coupon code</label>
+            <input type='text' name='coupon' class='stretch' />
+          </fieldset>
+        </div>
+        <div class='pad2 clearfix'>
+          <div class='col12 text-right pad2x'>
+            <input class='' type='submit' value='Done' />
+          </div>
+        </div>
+      </div>
+    </form>
+</div>
+</script>
+
+<script type='text/html' id='template-modal-err'>
+<% if (!(obj instanceof Error)) {
+  if ('responseText' in obj) {
+    try {
+      obj = new Error(JSON.parse(obj.responseText).message);
+    } catch (err) {
+      obj = new Error(obj.responseText);
+    }
+  } else if ('message' in obj) {
+    obj = new Error(obj.message);
+  } else if ('status' in obj && typeof obj.status === 'number') {
+    obj = new Error('HTTP ' + obj.status);
+  } else {
+    obj = new Error('Unknown error occurred');
+  }
+} %>
+<div id='modal-err' class='col12 modal-popup'>
+  <div class='margin3 col6 modal-body fill-white'>
+    <div class='pad2y pad4x keyline-bottom center'>
+      <%= obj %>
+    </div>
+    <div class='pad2y pad4x center'>
+      <a href='#close' class='button quiet close'>Close</a>
+    </div>
+  </div>
+</div>
+</script>
+
+<script type='text/html' id='template-modal-confirm'>
+<div id='modal-confirm' class='col12 modal-popup'>
+  <div class='margin3 col6 modal-body fill-white'>
+    <% if (obj.html) { %>
+    <div class='pad2y pad4x keyline-bottom'><%= obj.html %></div>
+    <% } else { %>
+    <div class='pad2y pad4x keyline-bottom center'><%= obj.text || obj %></div>
+    <% } %>
+    <div class='pad2y pad4x clearfix center'><!--
+    --><% if (obj.callback && obj.cancel !== false) { %><a href='#cancel' class='pad1y small col6 quiet icon strong close cancel'>Cancel</a><% } %><!--
+    --><a href='#ok' class='button <% if (obj.callback && obj.cancel !== false) { %>col6<% } %> icon check ok'>Okay</a><!--
+  --></div>
+  </div>
+</div>
+</script>
+
+<script type='text/html' id='template-plan-confirm'>
+<% if (obj.plan.isUpgrade()) { %>
+<h2 class='center'><%= plan.get('name') %> for $<%= plan.get('price') %>/<%= plan.get('period') %></h2>
+<% if (obj.reason && obj.reason === 'satellite') { %>
+<p class='center'>To use <strong>MapBox Satellite</strong> upgrade to the <strong><%= plan.get('name') %></strong> plan.</p>
+<% } else { %>
+<p class='center'>You're about to upgrade to the <strong><%= plan.get('name') %></strong> plan.</p>
+<% } %>
+<div class='center small'>
+  <a href='/help/#changing-plans' target='_blank'>What happens when I change plans?</a>
+</div>
+<% } else { %>
+<h2 class='center'>Downgrade to <%= plan.get('name') %></h2>
+<p class='center'>Before you do that, can we help you get the most out of MapBox?<br/><a href='http://support.mapbox.com/' target='_blank'>Ask our support team for help</a>.</p>
+<% if (!obj.plan.get('price')) { %>
+<h3 class='space-bottom'>What is the main reason for downgrading your subscription?</h3>
+<form id='downgrade-survey' class='small space-bottom' method='post'>
+  <div>
+    <input type='radio' name='answer' id='answer0' value='Missing a crucial feature' />
+    <label for='answer0'>Missing a crucial feature</label>
+  </div>
+  <div>
+    <input type='radio' name='answer' id='answer1' value='Not using it' />
+    <label for='answer1'>Not using it</label>
+  </div>
+  <div>
+    <input type='radio' name='answer' id='answer2' value='Free plan is enough for my needs' />
+    <label for='answer2'>Free plan is enough for my needs</label>
+  </div>
+  <div>
+    <input type='radio' name='answer' id='answer3' value='Needs better documentation' />
+    <label for='answer3'>Needs better documentation</label>
+  </div>
+  <div>
+    <input type='radio' name='answer' id='answer4' value='Not satisfied with support' />
+    <label for='answer4'>Not satisfied with support</label>
+  </div>
+  <div>
+    <input type='radio' name='answer' id='answer5' value='Went with a different tool' />
+    <label for='answer5'>Went with a different tool</label>
+  </div>
+  <div>
+    <input type='radio' name='answer' id='answer6' value='Other' />
+    <label for='answer6'>Other</label>
+  </div>
+</form>
+<% } %>
+<div class='center small'>
+  <a href='/help/#changing-plans' target='_blank'>What happens when I change plans?</a>
+</div>
+<% } %>
+</script>
+
+<script type='text/html' id='template-alert'>
+<a href='#alert' id='alert' class='fill-yellow block'><span class='icon big alert quiet'></span></a>
+</script>
+
+</body>
+</html>
