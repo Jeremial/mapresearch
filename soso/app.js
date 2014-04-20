@@ -43,8 +43,8 @@ app.get('/modules.js', function(req,res){
                 + "','"
                 + fs.readFileSync(__dirname + '/mod/' + mod + '.js')
                     .toString() // buffer -> string
-                    .replace(/\n/g,'') // 去掉回车
-                    .replace(/\s+/g,' ') // 将多个空格变成一个
+                    .replace(/\n */g,' ') // 去掉回车
+                    // .replace(/\s+/g,' ') // 将多个空格变成一个
                     .replace(/\\/g,'\\\\') // 转义 \
                     .replace(/'/g,"\\'") // 转义 '
                 + " ');"
